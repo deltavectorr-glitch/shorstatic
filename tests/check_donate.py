@@ -244,6 +244,14 @@ def check_sitewide(errors: list[str]) -> None:
                 fail(errors, f"{rel} shows {number} without {href}")
             if text.count(number) != text.count(href):
                 fail(errors, f"{rel} phone link count for {number} does not match")
+        allowed_tels = {"tel:+918090108939", "tel:+919599154905"}
+        for href in re.findall(r'href="(tel:[^"]*)"', text):
+            if href not in allowed_tels:
+                fail(errors, f"{rel} tel link is {href}")
+        first = text.find("8090108939")
+        second = text.find("9599154905")
+        if first != -1 and second != -1 and first > second:
+            fail(errors, f"{rel} lists 9599154905 before 8090108939")
 
 
 def check_nav(errors: list[str]) -> None:
