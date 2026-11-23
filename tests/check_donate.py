@@ -63,9 +63,11 @@ FORBIDDEN = [
     "full platform",
     "razorpay",
     "payment gateway",
-    "qr code",
     "upi://",
 ]
+
+UPI_QR_SRC = "/images/upi-qr-shrihariomram.png"
+UPI_QR_FILE = ROOT / "images" / "upi-qr-shrihariomram.png"
 
 NAV_LABELS = ["Work", "Solutions", "Events", "About", "Contact", "Donate"]
 
@@ -277,6 +279,14 @@ def check_nav(errors: list[str]) -> None:
                 fail(errors, "give.html Donate item missing")
 
 
+def check_qr(errors: list[str]) -> None:
+    give = (ROOT / "give.html").read_text()
+    if UPI_QR_SRC not in give:
+        fail(errors, f"give.html does not reference {UPI_QR_SRC}")
+    if not UPI_QR_FILE.is_file():
+        fail(errors, f"UPI QR file is missing: {UPI_QR_FILE.relative_to(ROOT)}")
+
+
 def check_routes(errors: list[str]) -> None:
     redirects = load_redirects()
     sources = {rule.get("source"): rule.get("destination") for rule in redirects}
@@ -298,6 +308,7 @@ def check_routes(errors: list[str]) -> None:
 def main() -> None:
     errors: list[str] = []
     check_page(errors)
+    check_qr(errors)
     check_sitewide(errors)
     check_nav(errors)
     check_routes(errors)

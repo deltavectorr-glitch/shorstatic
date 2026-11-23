@@ -212,6 +212,7 @@ a {
   border-bottom: 1px solid rgba(243, 241, 236, 0.12);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .tax-table th {
@@ -223,3 +224,42 @@ a {
 .tax-table td {
   color: #8b98a8;
 }
+
+.upi-qr {
+  margin: 0.15rem 0 0;
+  width: 260px;
+  max-width: 100%;
+}
+
+.upi-qr-label {
+  margin: 0 0 0.65rem;
+  color: #f3f1ec;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.upi-qr img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+}
+
+.upi-qr-payee {
+  margin: 0.75rem 0 0;
+  color: #f3f1ec;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.upi-qr-note {
+  margin: 0.55rem 0 0;
+  max-width: 36rem;
+  color: #8b98a8;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
