@@ -48,7 +48,8 @@ PROVISIONAL_SENTENCE = (
 
 RECEIPT_LINE = (
     "After giving, email your name, PAN, address, amount, date and UTR/UPI reference to "
-    "support@shorfoundation.in. We will issue Form 10BE within [RECEIPT TIMELINE] of receiving "
+    '<a href="mailto:support@shorfoundation.in">support@shorfoundation.in</a>. '
+    "We will issue Form 10BE within [RECEIPT TIMELINE] of receiving "
     "complete details. Donations are reported in Form 10BD / Form 113 as required. Your PAN and "
     "address are used only to issue the receipt and to file the statutory donation return; they "
     "are not used for marketing."
@@ -210,8 +211,14 @@ def check_page(errors: list[str]) -> None:
     privacy = (ROOT / "privacy.html").read_text()
     if "info@shorfoundation.com" in privacy:
         fail(errors, "privacy.html still lists info@shorfoundation.com")
-    if "contacting us at support@shorfoundation.in" not in privacy:
-        fail(errors, "privacy consent line does not use support@shorfoundation.in")
+    if "contacting us at support@shorfoundation.in." not in privacy:
+        fail(errors, "privacy consent line does not use support@shorfoundation.in.")
+    if "support@shorfoundation.in ." in privacy:
+        fail(errors, "privacy consent line has a space before the period")
+    if "our organisation" not in privacy:
+        fail(errors, "privacy.html does not say our organisation")
+    if "our organization" in privacy:
+        fail(errors, "privacy.html still says our organization")
 
 
 def check_sitewide(errors: list[str]) -> None:
@@ -243,7 +250,6 @@ def check_nav(errors: list[str]) -> None:
         parser = LinkParser()
         parser.feed(page.read_text())
         rel = page.relative_to(ROOT)
-        prefix = "../" if len(rel.parts) > 1 else "./"
         expected = GIVE_NAV if rel.as_posix() == "give.html" else NAV_LABELS
         if [text for _, text in parser.desktop] != expected:
             fail(errors, f"{rel} desktop nav is {[text for _, text in parser.desktop]}")
@@ -260,7 +266,7 @@ def check_nav(errors: list[str]) -> None:
                 target = (page.parent / href).resolve()
             if not target.is_file():
                 fail(errors, f"{rel} nav link {href} does not resolve")
-        if parser.footer_give != [(f"{prefix}give.html", "Give / CSR")]:
+        if parser.footer_give != [("/give", "Give / CSR")]:
             fail(errors, f"{rel} footer Give link is {parser.footer_give}")
         if rel.as_posix() == "give.html":
             donate = [href for href, text in parser.desktop if text == "Donate"]
