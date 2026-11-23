@@ -21,7 +21,7 @@ REQUIRED_FACTS = [
     "122488700000014",
     "YESB0001224",
     "YES Bank",
-    "Shorfoundation@yesbank",
+    "yespay.smessi10351937@yesbankltd",
     "NEFT/IMPS/RTGS",
     "ABOCS3386D",
     "DL/2024/0452487",
