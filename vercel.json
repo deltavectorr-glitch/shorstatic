@@ -1,5 +1,9 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/donate", "destination": "/give", "permanent": true },
+    { "source": "/donate.html", "destination": "/give", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/images/(.*)",
