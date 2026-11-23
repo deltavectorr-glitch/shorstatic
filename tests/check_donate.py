@@ -234,13 +234,24 @@ def check_sitewide(errors: list[str]) -> None:
             fail(errors, f"{rel} footer still says Organization")
         if ">Organisation</p>" not in text:
             fail(errors, f"{rel} footer is missing Organisation")
-        if "+91-8099010839" in text or "9599154905" in text or "+91 95991 54905" in text:
-            fail(errors, f"{rel} still has a retired phone number")
-        number, href = "+91 80901 08939", 'href="tel:+918090108939"'
-        if number in text and href not in text:
-            fail(errors, f"{rel} shows {number} without {href}")
-        if text.count(number) != text.count(href):
-            fail(errors, f"{rel} phone link count for {number} does not match")
+        if "+91-8099010839" in text:
+            fail(errors, f"{rel} still has the mismatched phone number")
+        for number, href in (
+            ("+91 80901 08939", 'href="tel:+918090108939"'),
+            ("+91 95991 54905", 'href="tel:+919599154905"'),
+        ):
+            if number in text and href not in text:
+                fail(errors, f"{rel} shows {number} without {href}")
+            if text.count(number) != text.count(href):
+                fail(errors, f"{rel} phone link count for {number} does not match")
+        allowed_tels = {"tel:+918090108939", "tel:+919599154905"}
+        for href in re.findall(r'href="(tel:[^"]*)"', text):
+            if href not in allowed_tels:
+                fail(errors, f"{rel} tel link is {href}")
+        first = text.find("8090108939")
+        second = text.find("9599154905")
+        if first != -1 and second != -1 and first > second:
+            fail(errors, f"{rel} lists 9599154905 before 8090108939")
 
 
 def check_nav(errors: list[str]) -> None:
