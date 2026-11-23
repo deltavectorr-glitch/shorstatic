@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -63,9 +65,11 @@ FORBIDDEN = [
     "full platform",
     "razorpay",
     "payment gateway",
-    "qr code",
     "upi://",
 ]
+
+UPI_QR_SRC = "/images/upi-qr-shrihariomram.png"
+UPI_QR_FILE = ROOT / "images" / "upi-qr-shrihariomram.png"
 
 NAV_LABELS = ["Work", "Solutions", "Events", "About", "Contact", "Donate"]
 
@@ -277,6 +281,64 @@ def check_nav(errors: list[str]) -> None:
                 fail(errors, "give.html Donate item missing")
 
 
+def upi_param(payload: str, name: str) -> str:
+    query = payload.split("?", 1)[1] if "?" in payload else ""
+    for part in query.split("&"):
+        key, sep, value = part.partition("=")
+        if sep and key == name:
+            return value
+    return ""
+
+
+def qr_payload(path: Path) -> str | None:
+    """Decoded QR text. None means no decoder is installed."""
+    try:
+        from pyzbar.pyzbar import decode as zbar_decode
+        from PIL import Image
+    except ImportError:
+        zbar_decode = None
+    else:
+        try:
+            found = zbar_decode(Image.open(path))
+        except Exception:
+            found = None
+        else:
+            if not found:
+                return ""
+            return found[0].data.decode("utf-8")
+    zbarimg = shutil.which("zbarimg")
+    if not zbarimg:
+        return None
+    proc = subprocess.run(
+        [zbarimg, "--raw", "-q", str(path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    text = proc.stdout.strip()
+    if proc.returncode != 0 or not text:
+        return ""
+    return text.splitlines()[0]
+
+
+def check_qr(errors: list[str]) -> None:
+    give = (ROOT / "give.html").read_text()
+    if UPI_QR_SRC not in give:
+        fail(errors, f"give.html does not reference {UPI_QR_SRC}")
+    if not UPI_QR_FILE.is_file():
+        fail(errors, f"UPI QR file is missing: {UPI_QR_FILE.relative_to(ROOT)}")
+        return
+    payload = qr_payload(UPI_QR_FILE)
+    if payload is None:
+        return
+    pa = upi_param(payload, "pa")
+    pn = upi_param(payload, "pn")
+    if pa != "yespay.smessi10351937@yesbankltd":
+        fail(errors, f"UPI QR pa is {pa!r}")
+    if pn != "SHRIHARIOMRAM FOUNDATION":
+        fail(errors, f"UPI QR pn is {pn!r}")
+
+
 def check_routes(errors: list[str]) -> None:
     redirects = load_redirects()
     sources = {rule.get("source"): rule.get("destination") for rule in redirects}
@@ -298,6 +360,7 @@ def check_routes(errors: list[str]) -> None:
 def main() -> None:
     errors: list[str] = []
     check_page(errors)
+    check_qr(errors)
     check_sitewide(errors)
     check_nav(errors)
     check_routes(errors)
