@@ -35,14 +35,28 @@ REQUIRED_FACTS = [
     "UTR/UPI reference",
     "provisional registration",
     "provisional approval",
-    "We can currently accept gifts from Indian donors.",
+    "We can currently accept donations only from Indian citizens and Indian-source funds.",
+    "02-Item (A) of sub-clause (vi) of clause (ac) of sub-section (1) of section 12A",
 ]
 
 PROVISIONAL_SENTENCE = (
     "SHRIHARIOMRAM FOUNDATION holds provisional registration under section 12A "
     "(URN ABOCS3386DE20241) and provisional approval under section 80G "
-    "(URN ABOCS3386DF20241), vide Form 10AC dated 28-10-2024, valid AY 2025-26 to AY 2027-28."
+    "(URN ABOCS3386DF20241), vide Form 10AC dated 28-10-2024, valid AY 2025-26 to AY 2027-28. "
+    "Donations may be eligible for deduction under section 80G, subject to applicable law."
 )
+
+RECEIPT_LINE = (
+    "After giving, email your name, PAN, address, amount, date and UTR/UPI reference to "
+    "support@shorfoundation.in. We will issue Form 10BE within [RECEIPT TIMELINE] of receiving "
+    "complete details. Donations are reported in Form 10BD / Form 113 as required. Your PAN and "
+    "address are used only to issue the receipt and to file the statutory donation return; they "
+    "are not used for marketing."
+)
+
+LEDE = "Give by bank transfer (NEFT/IMPS/RTGS) or UPI. This page is for individual donors and CSR desks."
+
+GIVE_NAV = ["Work", "Events", "About", "Contact", "Donate"]
 
 FORBIDDEN = [
     "full platform",
@@ -179,21 +193,46 @@ def check_page(errors: list[str]) -> None:
     for cta in ("contact.html?type=DONOR", "contact.html?type=PARTNER"):
         if cta not in give:
             fail(errors, f"donor/CSR CTA missing: {cta}")
-    if ">400+</span>" not in give or "Children Supported Annually" not in give:
-        fail(errors, "published impact figures were dropped")
+    if RECEIPT_LINE not in give:
+        fail(errors, "give.html receipt line does not match the approved text")
+    if LEDE not in give:
+        fail(errors, "give.html lede does not match the approved text")
+    if "public brief" in give or "Children Supported Annually" in give or "400+" in give:
+        fail(errors, "give.html still has the old lede or the impact rail")
+    if "solutions.html" in give or ">Solutions<" in give:
+        fail(errors, "give.html still links to Solutions")
+    if "We can currently accept gifts from Indian donors." in give:
+        fail(errors, "give.html still has the old Indian-donor line")
     hero = give.split("<section", 1)[0]
     for banned in ("counter-uav", "Counter-UAV", "C-UAV"):
         if banned in hero:
             fail(errors, f"donate nav/hero promotes {banned}")
-    for page in ("privacy.html", "terms.html"):
-        text = (ROOT / page).read_text()
-        if "+91-8099010839" in text:
-            fail(errors, f"{page} still has the mismatched phone number")
-        if "Phone: +91 80901 08939" not in text:
-            fail(errors, f"{page} contact phone is not +91 80901 08939")
     privacy = (ROOT / "privacy.html").read_text()
-    if "info@shorfoundation.com" not in privacy:
-        fail(errors, "privacy.html info@ address was changed")
+    if "info@shorfoundation.com" in privacy:
+        fail(errors, "privacy.html still lists info@shorfoundation.com")
+    if "contacting us at support@shorfoundation.in" not in privacy:
+        fail(errors, "privacy consent line does not use support@shorfoundation.in")
+
+
+def check_sitewide(errors: list[str]) -> None:
+    pages = sorted(ROOT.rglob("*.html"))
+    for page in pages:
+        text = page.read_text()
+        rel = page.relative_to(ROOT)
+        if ">Organization</p>" in text:
+            fail(errors, f"{rel} footer still says Organization")
+        if ">Organisation</p>" not in text:
+            fail(errors, f"{rel} footer is missing Organisation")
+        if "+91-8099010839" in text:
+            fail(errors, f"{rel} still has the mismatched phone number")
+        for number, href in (
+            ("+91 80901 08939", 'href="tel:+918090108939"'),
+            ("+91 95991 54905", 'href="tel:+919599154905"'),
+        ):
+            if number in text and href not in text:
+                fail(errors, f"{rel} shows {number} without {href}")
+            if text.count(number) != text.count(href):
+                fail(errors, f"{rel} phone link count for {number} does not match")
 
 
 def check_nav(errors: list[str]) -> None:
@@ -205,16 +244,20 @@ def check_nav(errors: list[str]) -> None:
         parser.feed(page.read_text())
         rel = page.relative_to(ROOT)
         prefix = "../" if len(rel.parts) > 1 else "./"
-        if [text for _, text in parser.desktop] != NAV_LABELS:
+        expected = GIVE_NAV if rel.as_posix() == "give.html" else NAV_LABELS
+        if [text for _, text in parser.desktop] != expected:
             fail(errors, f"{rel} desktop nav is {[text for _, text in parser.desktop]}")
-        if [text for _, text in parser.mobile] != NAV_LABELS:
+        if [text for _, text in parser.mobile] != expected:
             fail(errors, f"{rel} mobile nav is {[text for _, text in parser.mobile]}")
-        if parser.cta != [(f"{prefix}give.html", "Donate")]:
+        if parser.cta != [("/give", "Donate")]:
             fail(errors, f"{rel} header CTA is {parser.cta}")
         for href, text in parser.desktop + parser.mobile:
-            if text == "Donate" and href != f"{prefix}give.html":
-                fail(errors, f"{rel} Donate href is {href}, expected {prefix}give.html")
-            target = (page.parent / href).resolve()
+            if text == "Donate" and href != "/give":
+                fail(errors, f"{rel} Donate href is {href}, expected /give")
+            if href.startswith("/"):
+                target = ROOT / f"{href.lstrip('/')}.html"
+            else:
+                target = (page.parent / href).resolve()
             if not target.is_file():
                 fail(errors, f"{rel} nav link {href} does not resolve")
         if parser.footer_give != [(f"{prefix}give.html", "Give / CSR")]:
@@ -222,9 +265,9 @@ def check_nav(errors: list[str]) -> None:
         if rel.as_posix() == "give.html":
             donate = [href for href, text in parser.desktop if text == "Donate"]
             row = page.read_text()
-            if 'text-[#f3f1ec]' not in row.split("mkt-nav-cta")[0].split(">Donate<")[0][-80:]:
+            if 'href="/give" class="text-[#f3f1ec]' not in row:
                 fail(errors, "give.html does not mark Donate as the current desktop item")
-            if donate != ["./give.html"]:
+            if donate != ["/give"]:
                 fail(errors, "give.html Donate item missing")
 
 
@@ -249,6 +292,7 @@ def check_routes(errors: list[str]) -> None:
 def main() -> None:
     errors: list[str] = []
     check_page(errors)
+    check_sitewide(errors)
     check_nav(errors)
     check_routes(errors)
     if errors:
