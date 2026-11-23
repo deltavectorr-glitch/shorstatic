@@ -49,7 +49,7 @@ PROVISIONAL_SENTENCE = (
 RECEIPT_LINE = (
     "After giving, email your name, PAN, address, amount, date and UTR/UPI reference to "
     '<a href="mailto:support@shorfoundation.in">support@shorfoundation.in</a>. '
-    "We will issue Form 10BE within [RECEIPT TIMELINE] of receiving "
+    "We will issue Form 10BE within 7 days of receiving "
     "complete details. Donations are reported in Form 10BD / Form 113 as required. Your PAN and "
     "address are used only to issue the receipt and to file the statutory donation return; they "
     "are not used for marketing."
