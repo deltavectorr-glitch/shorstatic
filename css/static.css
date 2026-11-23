@@ -212,7 +212,7 @@ a {
   border-bottom: 1px solid rgba(243, 241, 236, 0.12);
   text-align: left;
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .tax-table th {
@@ -242,9 +242,11 @@ a {
 
 .upi-qr img {
   display: block;
+  box-sizing: content-box;
   width: 100%;
-  max-width: 100%;
+  max-width: 260px;
   height: auto;
+  padding: 12px;
   background: #fff;
 }
 
